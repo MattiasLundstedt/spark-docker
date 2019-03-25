@@ -1,0 +1,8 @@
+.vscode
+*.log
+*.out
+*.db
+.DS_Store
+metastore_db
+spark/data
+.ipynb_checkpoints

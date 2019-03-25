@@ -1,0 +1,132 @@
+version: '3.7'
+
+  # References:
+  # - https://medium.com/@marcovillarreal_40011/creating-a-spark-standalone-cluster-with-docker-and-docker-compose-ba9d743a157f
+  # - https://vitalflux.com/hello-world-with-apache-spark-standalone-cluster-on-docker/
+
+services:
+
+    # This container will run a Jupyter instance
+    spark-notebook:
+        build:
+          context: ./docker/spark-notebook
+          dockerfile: Dockerfile
+          args: 
+            - NOTEBOOKS_DIR=/opt/notebooks
+        container_name: spark-notebook
+        hostname: spark-notebook
+
+        # Expose and map ports to Host
+        ports:
+          - 8888:8888
+          - 4041:4040
+        volumes:
+            - ./spark/apps:/opt/spark-apps
+            - ./spark/data:/opt/spark-data
+            - ./notebooks:/opt/notebooks
+
+        networks:
+            spark-network:
+              ipv4_address: 10.5.0.2
+
+    # This is the Spark cluster manager
+    spark-master:
+        build:
+            context: ./docker/spark-master
+            dockerfile: Dockerfile
+        container_name: spark-master
+        hostname: spark-master
+
+        # Expose and map ports to Host
+        ports:
+          - 4040:4040
+          - 6066:6066
+          - 7077:7077
+          - 8081:8080
+        volumes:
+            - ./spark/apps:/opt/spark-apps
+            - ./spark/data:/opt/spark-data
+            - ./spark/logs/master:/opt/spark-logs
+        environment:
+          - "SPARK_MASTER_PORT=7077"
+          - "SPARK_MASTER_WEBUI_PORT=8080"
+          - "SPARK_MASTER_LOG=/opt/spark-logs"
+        networks:
+            spark-network:
+              ipv4_address: 10.5.0.3
+
+    # This is a Spark worker
+    spark-worker-1:
+        build:
+            context: ./docker/spark-worker
+            dockerfile: Dockerfile
+        container_name: spark-worker-1
+        hostname: spark-worker-1
+
+        # Expose and map ports to Host
+        ports:
+          - 8082:8081
+        volumes:
+            - ./spark/apps:/opt/spark-apps
+            - ./spark/data:/opt/spark-data
+            - ./spark/logs/worker-1:/opt/spark-logs
+        environment:
+          - "SPARK_MASTER=spark://spark-master:7077"
+          - "SPARK_WORKER_WEBUI_PORT=8081"
+          - "SPARK_WORKER_LOG=/opt/spark-logs"
+        networks:
+            spark-network:
+              ipv4_address: 10.5.0.4
+
+    # This is a Spark worker
+    spark-worker-2:
+        build:
+            context: ./docker/spark-worker
+            dockerfile: Dockerfile
+        container_name: spark-worker-2
+        hostname: spark-worker-2
+
+        # Expose and map ports to Host
+        ports:
+          - 8083:8081
+        volumes:
+            - ./spark/apps:/opt/spark-apps
+            - ./spark/data:/opt/spark-data
+            - ./spark/logs/worker-2:/opt/spark-logs
+        environment:
+          - "SPARK_MASTER=spark://spark-master:7077"
+          - "SPARK_WORKER_WEBUI_PORT=8081"
+          - "SPARK_WORKER_LOG=/opt/spark-logs"
+        networks:
+            spark-network:
+              ipv4_address: 10.5.0.5
+
+    # This is a Spark worker
+    spark-worker-3:
+        build:
+            context: ./docker/spark-worker
+            dockerfile: Dockerfile
+        container_name: spark-worker-3
+        hostname: spark-worker-3
+
+        # Expose and map ports to Host
+        ports:
+          - 8084:8081
+        volumes:
+            - ./spark/apps:/opt/spark-apps
+            - ./spark/data:/opt/spark-data
+            - ./spark/logs/worker-3:/opt/spark-logs
+        environment:
+          - "SPARK_MASTER=spark://spark-master:7077"
+          - "SPARK_WORKER_WEBUI_PORT=8081"
+          - "SPARK_WORKER_LOG=/opt/spark-logs"
+        networks:
+            spark-network:
+              ipv4_address: 10.5.0.6
+
+networks:
+  spark-network:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 10.5.0.0/16
